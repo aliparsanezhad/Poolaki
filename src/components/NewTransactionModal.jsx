@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Shapes,
-  CreditCard
+  CreditCard,
+  Calculator
 } from 'lucide-react';
 import CategoryIcon from './CategoryIcon';
+import CalculatorKeypad from './CalculatorKeypad';
 
 export default function NewTransactionModal() {
   const {
@@ -37,6 +39,7 @@ export default function NewTransactionModal() {
     subName: '',
     icon: 'Shapes'
   });
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   if (!isNewTxModalOpen) return null;
 
@@ -152,9 +155,25 @@ export default function NewTransactionModal() {
           </button>
         </div>
 
-        {/* Amount Input Card matching photo_4 */}
+        {/* Amount Input Card with in-app Calculator toggle matching update_calculator.jpg */}
         <div className="bg-[#191e2b] border border-[#2d364b] rounded-2xl px-4 py-3 flex items-center justify-between">
-          <span className="text-slate-400 text-xs font-medium">تومان</span>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-xs font-medium">تومان</span>
+            <button
+              type="button"
+              onClick={() => setIsCalculatorOpen(!isCalculatorOpen)}
+              className={`p-1.5 rounded-xl border text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                isCalculatorOpen
+                  ? 'bg-[#6179fb] text-white border-blue-400 shadow-md'
+                  : 'bg-[#252c3c] hover:bg-[#323b4e] text-slate-300 border-[#384359]'
+              }`}
+              title="ماشین حساب درون‌برنامه‌ای"
+            >
+              <Calculator className="w-3.5 h-3.5 text-amber-300" />
+              <span className="text-[10px] font-bold">ماشین‌حساب</span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400 font-bold text-lg">
               {type === 'expense' ? '-' : '+'}
@@ -164,11 +183,23 @@ export default function NewTransactionModal() {
               value={amountStr}
               onChange={handleAmountChange}
               placeholder="۰"
-              className="bg-transparent text-right text-2xl font-bold text-white outline-none w-48 tracking-wider font-vazir"
+              className="bg-transparent text-right text-2xl font-bold text-white outline-none w-40 tracking-wider font-vazir"
               dir="ltr"
             />
           </div>
         </div>
+
+        {/* In-App Calculator Keypad Component */}
+        {isCalculatorOpen && (
+          <CalculatorKeypad
+            initialValue={amountStr}
+            onConfirm={(val) => {
+              setAmountStr(formatNumberWithCommas(val));
+              setIsCalculatorOpen(false);
+            }}
+            onClose={() => setIsCalculatorOpen(false)}
+          />
+        )}
 
         {/* Account Selection Card */}
         <div className="bg-[#191e2b] border border-[#2d364b] rounded-2xl px-4 py-3 flex items-center justify-between">

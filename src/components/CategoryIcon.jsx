@@ -24,7 +24,10 @@ import {
   Receipt,
   Gift,
   Tag,
-  CircleDollarSign
+  CircleDollarSign,
+  HelpCircle,
+  Calculator,
+  Bell
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -52,7 +55,10 @@ const ICON_MAP = {
   Receipt,
   Gift,
   Tag,
-  CircleDollarSign
+  CircleDollarSign,
+  HelpCircle,
+  Calculator,
+  Bell
 };
 
 export default function CategoryIcon({ name, className = 'w-5 h-5', color }) {

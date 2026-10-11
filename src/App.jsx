@@ -17,6 +17,13 @@ import SmsPermissionModal from './components/SmsPermissionModal';
 import SmsSimulatorModal from './components/SmsSimulatorModal';
 import DataManagementModal from './components/DataManagementModal';
 
+// Advanced JeebYar & Update Modals
+import BatchSmsModal from './components/BatchSmsModal';
+import SubscriptionModal from './components/SubscriptionModal';
+import AssetValuationModal from './components/AssetValuationModal';
+import ReceiptScannerModal from './components/ReceiptScannerModal';
+import SplitBillModal from './components/SplitBillModal';
+
 function MainScreen() {
   const { activeTab } = usePoolaki();
 
@@ -41,7 +48,7 @@ function MainScreen() {
     <MobileFrame>
       {renderCurrentTab()}
 
-      {/* Global Modals & Drawers matching screenshots */}
+      {/* Core Poolaki Modals & Drawers */}
       <NewTransactionModal />
       <CategoryPickerModal />
       <CategoriesView />
@@ -50,6 +57,13 @@ function MainScreen() {
       <SmsPermissionModal />
       <SmsSimulatorModal />
       <DataManagementModal />
+
+      {/* Advanced JeebYar Super-App Modals */}
+      <BatchSmsModal />
+      <SubscriptionModal />
+      <AssetValuationModal />
+      <ReceiptScannerModal />
+      <SplitBillModal />
     </MobileFrame>
   );
 }
@@ -61,3 +75,4 @@ export default function App() {
     </PoolakiProvider>
   );
 }
+

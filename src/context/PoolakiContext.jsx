@@ -1,16 +1,33 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import {
   INITIAL_CATEGORIES,
   INITIAL_ACCOUNTS,
   INITIAL_TRANSACTIONS,
   INITIAL_DUES,
-  INITIAL_BACKUPS
+  INITIAL_BACKUPS,
+  INITIAL_PENDING_SMS
 } from '../data/initialData';
 import { parseBankSms } from '../utils/smsParser';
 
 const PoolakiContext = createContext(null);
 
-const STORAGE_KEY = 'poolaki_app_data_v1';
+const STORAGE_KEY = 'jeebyar_app_data_v2';
+
+export const INITIAL_MARKET_PRICES = {
+  gold18k: 4680000,       // تومان هر گرم طلای ۱۸ عیار
+  goldAbshodeh: 20270000,  // تومان هر مثقال آبشده
+  sekehEmami: 54200000,    // تومان هر عدد سکه تمام طرح جدید
+  tetherUsdt: 69400,       // تومان هر واحد تتر
+  silverGram: 74000        // تومان هر گرم نقره
+};
+
+export const INITIAL_PORTFOLIO = {
+  goldGrams: 12.5,
+  tetherAmount: 350,
+  silverGrams: 65,
+  sekehCount: 1
+};
 
 export function PoolakiProvider({ children }) {
   // Load initial state from LocalStorage or fall back to seed
@@ -39,6 +56,55 @@ export function PoolakiProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_BACKUPS;
   });
 
+  const [pendingSmsList, setPendingSmsList] = useState(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_pending_sms`);
+    return saved ? JSON.parse(saved) : INITIAL_PENDING_SMS;
+  });
+
+  // Subscription state
+  const [subscription, setSubscription] = useState(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_subscription`);
+    return saved
+      ? JSON.parse(saved)
+      : {
+          isPro: true, // Default to Pro for awesome rich preview
+          plan: 'pro',
+          planName: 'طرح حرفه‌ای (Pro)',
+          expiresAt: '۱۴۰۶/۰۲/۰۱',
+          autoRenew: true
+        };
+  });
+
+  // Multi-asset portfolio
+  const [portfolio, setPortfolio] = useState(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_portfolio`);
+    return saved ? JSON.parse(saved) : INITIAL_PORTFOLIO;
+  });
+
+  const [marketPrices, setMarketPrices] = useState(INITIAL_MARKET_PRICES);
+
+  // Split bills list
+  const [splitBills, setSplitBills] = useState(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_split_bills`);
+    return saved
+      ? JSON.parse(saved)
+      : [
+          {
+            id: 'sb-1',
+            title: 'شام دورهمی با بچه‌ها',
+            totalAmount: 1850000,
+            date: '۱۶ مهر ۱۴۰۵',
+            paidBy: 'من (علیرضا)',
+            members: [
+              { name: 'من', share: 462500, paid: true },
+              { name: 'محمد', share: 462500, paid: true },
+              { name: 'سینا', share: 462500, paid: false },
+              { name: 'امیر', share: 462500, paid: false }
+            ]
+          }
+        ];
+  });
+
   // UI state
   const [activeTab, setActiveTab] = useState('home'); // home, assets, reports, budget, dues
   const [isPhoneFrame, setIsPhoneFrame] = useState(true); // Toggle realistic phone frame
@@ -53,6 +119,12 @@ export function PoolakiProvider({ children }) {
   const [isSmsPermissionOpen, setIsSmsPermissionOpen] = useState(false);
   const [isSmsSimulatorOpen, setIsSmsSimulatorOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
+  const [isBatchSmsOpen, setIsBatchSmsOpen] = useState(false);
+  const [activeNotification, setActiveNotification] = useState(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isAssetValuationOpen, setIsAssetValuationOpen] = useState(false);
+  const [isReceiptScannerOpen, setIsReceiptScannerOpen] = useState(false);
+  const [isSplitBillOpen, setIsSplitBillOpen] = useState(false);
 
   // Callback holder when picking category from transaction form
   const [categoryPickerCallback, setCategoryPickerCallback] = useState(null);
@@ -78,9 +150,25 @@ export function PoolakiProvider({ children }) {
     localStorage.setItem(`${STORAGE_KEY}_backups`, JSON.stringify(backups));
   }, [backups]);
 
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_pending_sms`, JSON.stringify(pendingSmsList));
+  }, [pendingSmsList]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_subscription`, JSON.stringify(subscription));
+  }, [subscription]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_portfolio`, JSON.stringify(portfolio));
+  }, [portfolio]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_split_bills`, JSON.stringify(splitBills));
+  }, [splitBills]);
+
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   // Actions
@@ -176,18 +264,119 @@ export function PoolakiProvider({ children }) {
     showToast('سررسید حذف شد');
   };
 
+  const importAllPendingSms = () => {
+    if (pendingSmsList.length === 0) return;
+
+    const count = pendingSmsList.length;
+    const newTxs = pendingSmsList.map((item, index) => ({
+      id: `tx-batch-${Date.now()}-${index}`,
+      title: item.description || (item.type === 'income' ? 'واریز پیامکی' : 'خرید پیامکی'),
+      categoryName: 'تعیین‌نشده',
+      subCategoryName: '',
+      categoryId: 'uncategorized',
+      amount: item.amount,
+      type: item.type,
+      date: item.date?.split('،')?.[0] || 'امروز',
+      accountId: item.accountId || 'card-maskan',
+      accountName: item.accountName || 'کارت روزمره',
+      icon: item.type === 'income' ? 'TrendingUp' : 'Receipt'
+    }));
+
+    setTransactions((prev) => [...newTxs, ...prev]);
+
+    // Update balances
+    setAccounts((prev) =>
+      prev.map((acc) => {
+        const relatedItems = pendingSmsList.filter((item) => item.accountId === acc.id);
+        if (relatedItems.length === 0) return acc;
+        const totalDelta = relatedItems.reduce((sum, item) => {
+          return sum + (item.type === 'expense' ? -item.amount : item.amount);
+        }, 0);
+        return {
+          ...acc,
+          currentBalance: (acc.currentBalance || acc.initialBalance || 0) + totalDelta
+        };
+      })
+    );
+
+    setPendingSmsList([]);
+    setIsBatchSmsOpen(false);
+    showToast(`${count} تراکنش با موفقیت به دسته «تعیین‌نشده» اضافه شدند!`);
+  };
+
+  const deletePendingSms = (id) => {
+    setPendingSmsList((prev) => prev.filter((p) => p.id !== id));
+    showToast('پیامک حذف شد');
+  };
+
+  const triggerSampleNotification = (sampleData = null) => {
+    setActiveNotification(
+      sampleData || {
+        id: `notif-${Date.now()}`,
+        title: 'واریز پایا اینترنتی',
+        amount: 12389000,
+        type: 'income',
+        accountName: 'خرید اینترنتی',
+        accountId: 'account-online'
+      }
+    );
+  };
+
+  const activateSubscription = (planId, coupon = '') => {
+    const plans = {
+      pro_month: { name: 'طرح حرفه‌ای (ماهانه)', expires: '۱ ماه دیگر' },
+      pro_year: { name: 'طرح حرفه‌ای (سالانه)', expires: '۱ سال دیگر' },
+      vip_lifetime: { name: 'طرح مادام‌العمر الماس', expires: 'نامحدود (دائمی)' }
+    };
+
+    const chosen = plans[planId] || plans.pro_year;
+    setSubscription({
+      isPro: true,
+      plan: planId,
+      planName: chosen.name,
+      expiresAt: chosen.expires,
+      autoRenew: true
+    });
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+
+    showToast(`اشتراک ${chosen.name} با موفقیت فعال شد! 🎉`);
+    setIsSubscriptionModalOpen(false);
+  };
+
+  const updatePortfolio = (newPort) => {
+    setPortfolio(newPort);
+    showToast('سبد دارایی‌ها به‌روز شد');
+  };
+
+  const addSplitBill = (newBill) => {
+    const bill = {
+      id: `sb-${Date.now()}`,
+      date: 'امروز',
+      ...newBill
+    };
+    setSplitBills((prev) => [bill, ...prev]);
+    showToast('محاسبه دنگ با موفقیت ذخیره شد');
+  };
+
   const createBackup = () => {
     const backupId = `b-${Date.now()}`;
     const dateStr = new Date().toLocaleDateString('fa-IR');
-    const filename = `poolaki-backup-${Date.now()}.plk`;
-    
+    const filename = `jeebyar-backup-${Date.now()}.plk`;
+
     const fullBackupData = {
-      version: '1.0',
+      version: '2.0',
       exportedAt: new Date().toISOString(),
+      appName: 'JeebYar',
       transactions,
       categories,
       accounts,
-      dues
+      dues,
+      portfolio
     };
 
     const newBackup = {
@@ -201,9 +390,8 @@ export function PoolakiProvider({ children }) {
     };
 
     setBackups((prev) => [newBackup, ...prev]);
-    showToast('پشتیبان‌گیری با موفقیت انجام شد!');
+    showToast('پشتیبان‌گیری با فرمت PLK انجام شد');
 
-    // Trigger download of the .plk file
     const blob = new Blob([JSON.stringify(fullBackupData, null, 2)], {
       type: 'application/json'
     });
@@ -221,6 +409,7 @@ export function PoolakiProvider({ children }) {
     if (backupObj.accounts) setAccounts(backupObj.accounts);
     if (backupObj.transactions) setTransactions(backupObj.transactions);
     if (backupObj.dues) setDues(backupObj.dues);
+    if (backupObj.portfolio) setPortfolio(backupObj.portfolio);
     showToast('داده‌های پشتیبان با موفقیت بازیابی شد');
   };
 
@@ -228,10 +417,12 @@ export function PoolakiProvider({ children }) {
     setTransactions([]);
     setDues([]);
     setBackups([]);
+    setPendingSmsList([]);
     localStorage.removeItem(`${STORAGE_KEY}_transactions`);
     localStorage.removeItem(`${STORAGE_KEY}_dues`);
     localStorage.removeItem(`${STORAGE_KEY}_backups`);
-    showToast('کلیه اطلاعات با موفقیت پاک شدند');
+    localStorage.removeItem(`${STORAGE_KEY}_pending_sms`);
+    showToast('کلیه اطلاعات پاک شدند');
   };
 
   const simulateSmsReceived = (smsText) => {
@@ -241,7 +432,6 @@ export function PoolakiProvider({ children }) {
       return false;
     }
 
-    // Match account
     const matchedAccount =
       accounts.find((a) => a.name.includes(parsed.bankName) || a.bankName?.includes(parsed.bankName)) ||
       accounts[0];
@@ -254,8 +444,8 @@ export function PoolakiProvider({ children }) {
       amount: parsed.amount,
       type: parsed.type,
       date: 'امروز',
-      accountId: matchedAccount?.id || 'card-tejarat',
-      accountName: matchedAccount?.name || 'کارت بانکی',
+      accountId: matchedAccount?.id || 'card-maskan',
+      accountName: matchedAccount?.name || 'کارت روزمره',
       icon: parsed.type === 'income' ? 'TrendingUp' : 'Receipt'
     };
 
@@ -272,6 +462,13 @@ export function PoolakiProvider({ children }) {
         transactions,
         dues,
         backups,
+        pendingSmsList,
+        setPendingSmsList,
+        subscription,
+        setSubscription,
+        portfolio,
+        marketPrices,
+        splitBills,
         activeTab,
         setActiveTab,
         isPhoneFrame,
@@ -297,6 +494,18 @@ export function PoolakiProvider({ children }) {
         setIsSmsSimulatorOpen,
         isDataManagementOpen,
         setIsDataManagementOpen,
+        isBatchSmsOpen,
+        setIsBatchSmsOpen,
+        activeNotification,
+        setActiveNotification,
+        isSubscriptionModalOpen,
+        setIsSubscriptionModalOpen,
+        isAssetValuationOpen,
+        setIsAssetValuationOpen,
+        isReceiptScannerOpen,
+        setIsReceiptScannerOpen,
+        isSplitBillOpen,
+        setIsSplitBillOpen,
         // Handlers
         addTransaction,
         deleteTransaction,
@@ -308,6 +517,12 @@ export function PoolakiProvider({ children }) {
         toggleDuePaid,
         addDue,
         deleteDue,
+        importAllPendingSms,
+        deletePendingSms,
+        triggerSampleNotification,
+        activateSubscription,
+        updatePortfolio,
+        addSplitBill,
         createBackup,
         restoreBackupData,
         resetAllData,
@@ -326,3 +541,5 @@ export function usePoolaki() {
   }
   return context;
 }
+
+export const useJeebYar = usePoolaki;

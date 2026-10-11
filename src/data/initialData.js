@@ -1,5 +1,13 @@
 export const INITIAL_CATEGORIES = [
   {
+    id: 'uncategorized',
+    type: 'expense',
+    name: 'تعیین‌نشده',
+    icon: 'HelpCircle',
+    color: '#64748b',
+    subcategories: []
+  },
+  {
     id: 'food',
     type: 'expense',
     name: 'خوردنی',
@@ -159,6 +167,27 @@ export const INITIAL_ACCOUNTS = [
     initialBalance: 350000,
     currentBalance: 350000,
     color: '#059669'
+  },
+  {
+    id: 'card-maskan',
+    type: 'card',
+    bankName: 'بانک مسکن',
+    bankCode: 'maskan',
+    cardNumber: '6280 2314 9012 3456',
+    name: 'کارت روزمره',
+    smsEnabled: true,
+    smsSenders: ['Maskan', 'BankMaskan'],
+    initialBalance: 4890000,
+    currentBalance: 4890000,
+    color: '#c2410c'
+  },
+  {
+    id: 'account-online',
+    type: 'other',
+    name: 'خرید اینترنتی',
+    initialBalance: 1200000,
+    currentBalance: 1200000,
+    color: '#7c3aed'
   }
 ];
 
@@ -296,5 +325,78 @@ export const INITIAL_BACKUPS = [
     size: '128 KB',
     transactionsCount: 1085,
     duesCount: 24
+  }
+];
+
+export const INITIAL_PENDING_SMS = [
+  {
+    id: 'sms-p-1',
+    amount: 559500,
+    type: 'expense',
+    date: 'پنجشنبه ۱۷ مهر ۱۴۰۵، ۱۶:۱۴',
+    accountName: 'کارت روزمره',
+    accountId: 'card-maskan',
+    description: 'خرید از فروشگاه اتکا',
+    bankName: 'بانک مسکن'
+  },
+  {
+    id: 'sms-p-2',
+    amount: 1399000,
+    type: 'expense',
+    date: 'پنجشنبه ۱۷ مهر ۱۴۰۵، ۱۴:۰۸',
+    accountName: 'کارت روزمره',
+    accountId: 'card-maskan',
+    description: 'خرید پوشاک و کفش',
+    bankName: 'بانک مسکن'
+  },
+  {
+    id: 'sms-p-3',
+    amount: 34000,
+    type: 'expense',
+    date: 'پنجشنبه ۱۷ مهر ۱۴۰۵، ۱۱:۲۳',
+    accountName: 'کارت روزمره',
+    accountId: 'card-maskan',
+    description: 'سوپرمارکت محله',
+    bankName: 'بانک مسکن'
+  },
+  {
+    id: 'sms-p-4',
+    amount: 120000,
+    type: 'expense',
+    date: 'جمعه ۱۸ مهر ۱۴۰۵، ۰۹:۱۵',
+    accountName: 'کارت روزمره',
+    accountId: 'card-maskan',
+    description: 'نانوایی و سوپر پروتئین',
+    bankName: 'بانک مسکن'
+  },
+  {
+    id: 'sms-p-5',
+    amount: 250000,
+    type: 'expense',
+    date: 'جمعه ۱۸ مهر ۱۴۰۵، ۱۹:۴۰',
+    accountName: 'کارت روزمره',
+    accountId: 'card-maskan',
+    description: 'جایگاه سوخت آزادی',
+    bankName: 'بانک مسکن'
+  },
+  {
+    id: 'sms-p-6',
+    amount: 480000,
+    type: 'expense',
+    date: 'شنبه ۱۹ مهر ۱۴۰۵، ۱۲:۳۰',
+    accountName: 'تجارت',
+    accountId: 'card-tejarat',
+    description: 'کافه کتاب لمیز',
+    bankName: 'بانک تجارت'
+  },
+  {
+    id: 'sms-p-7',
+    amount: 12389000,
+    type: 'income',
+    date: 'شنبه ۱۹ مهر ۱۴۰۵، ۱۸:۲۰',
+    accountName: 'خرید اینترنتی',
+    accountId: 'account-online',
+    description: 'واریز پایا حقوق',
+    bankName: 'بانک ملی ایران'
   }
 ];

@@ -46,6 +46,7 @@ export function parseBankSms(smsText) {
   else if (/ملت/i.test(normalized)) bankName = 'ملت';
   else if (/سامان/i.test(normalized)) bankName = 'سامان';
   else if (/پاسارگاد/i.test(normalized)) bankName = 'پاسارگاد';
+  else if (/مسکن|maskan/i.test(normalized)) bankName = 'مسکن';
   else if (/بلو/i.test(normalized)) bankName = 'بلو';
 
   return {
